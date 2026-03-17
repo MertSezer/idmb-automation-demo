@@ -1,10 +1,32 @@
+# Node
 node_modules/
-output/
+
+# Env files
 .env
 .env.bak
-*.bak
-.DS_Store
 
-Y
-imdb-automation-demo@1.0.0
-node
+# Output artifacts
+output/
+screenshots/
+debug/
+
+# Logs
+logs/
+*.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+
+# Temporary / accidental files
+SUCCESS
+[0-9a-f]{7}
+*.tmp
+*.bak
+
+# Python cache (if used)
+__pycache__/
+*.pyc
+
+# Docker
+*.tar
