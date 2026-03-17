@@ -134,15 +134,6 @@ npm run start:validated
 This demo is validated in hybrid fixture-backed mode.
 
 In live navigation, IMDb profile pages may trigger AWS WAF challenges in this environment. To keep the demo stable and repeatable, the validated run uses hybrid profile resolution with fixture-backed fallback.
-## Validated Demo Status
-
-- Commit: `05e54f6`
-- Tag: `demo-ready`
-- Command: `npm run start:validated`
-- Result: `SUCCESS`
-- Rows matched: `23/23`
-- Blocked: `0`
-- Warnings: `0`
 
 ## Notes
 
@@ -152,17 +143,7 @@ In live navigation, IMDb profile pages may trigger AWS WAF challenges in this en
 
 ## Validated Demo Status
 
-- Commit: `05e54f6`
-- Tag: `demo-ready`
-- Command: `npm run start:validated`
-- Result: `SUCCESS`
-- Rows matched: `23/23`
-- Blocked: `0`
-- Warnings: `0`
-
-## Validated Demo Status
-
-- Commit: `b6dba8c`
+- Commit: `50bf96b`
 - Tag: `demo-ready`
 - Command: `npm run start:validated`
 - Result: `SUCCESS`
