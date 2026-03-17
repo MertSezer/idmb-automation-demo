@@ -4,6 +4,7 @@ const logger = require("../utils/logger");
 const { splitName, cleanName } = require("../utils/nameParser");
 const { sanitizeFileName } = require("../utils/file");
 const { withRetry } = require("../utils/retry");
+const { loadFixtures, findFixture } = require("../utils/fixtureStore");
 const { openTitlePage, getMovieTitle, findCastSection, getCastRows } = require("./titlePage");
 const { openProfilePage, getProfileFullName } = require("./profilePage");
 
@@ -27,6 +28,7 @@ function getMatchStatus(listedFullName, profileFullName) {
 
 async function scrapeTitle(page, movieUrl, context = {}) {
   const titleRunId = context.titleRunId || '';
+  const fixtures = loadFixtures();
   await withRetry(
     () => openTitlePage(page, movieUrl, config.navigationTimeout),
     { retries: config.maxRetries, label: "openTitlePage", meta: { titleRunId } }
@@ -83,30 +85,53 @@ async function scrapeTitle(page, movieUrl, context = {}) {
         (await maybeScreenshot(page, `${rowFileBase}_selected.png`)) || rowScreenshotPath;
 
       try {
-        await withRetry(
-          () => openProfilePage(profilePage, row.profileUrl, config.navigationTimeout),
-          { retries: config.maxRetries, label: `openProfilePage_${row.rowIndex}`, meta: { titleRunId } }
-        );
+        const shouldUseFixtureOnly = config.profileSource === "fixture";
+        const shouldUseHybrid = config.profileSource === "hybrid";
 
-        profileVisited = true;
-        logger.info("PROFILE_OPENED", {
-          titleRunId,
-          movieTitle,
-          rowIndex: row.rowIndex,
-          profileUrl: row.profileUrl
-        });
+        if (!shouldUseFixtureOnly) {
+          await withRetry(
+            () => openProfilePage(profilePage, row.profileUrl, config.navigationTimeout),
+            { retries: config.maxRetries, label: `openProfilePage_${row.rowIndex}`, meta: { titleRunId } }
+          );
 
-        profileScreenshotPath =
-          (await maybeScreenshot(profilePage, `${rowFileBase}_profile.png`)) || "";
+          profileVisited = true;
+          logger.info("PROFILE_OPENED", {
+            titleRunId,
+            movieTitle,
+            rowIndex: row.rowIndex,
+            profileUrl: row.profileUrl
+          });
 
-        profileFullName = await getProfileFullName(profilePage, `${movieTitle}_row_${row.rowIndex}_profile`);
+          profileScreenshotPath =
+            (await maybeScreenshot(profilePage, `${rowFileBase}_profile.png`)) || "";
 
-        logger.info("PROFILE_NAME_EXTRACTED", {
-          titleRunId,
-          movieTitle,
-          rowIndex: row.rowIndex,
-          profileFullName
-        });
+          profileFullName = await getProfileFullName(profilePage, `${movieTitle}_row_${row.rowIndex}_profile`);
+
+          logger.info("PROFILE_NAME_EXTRACTED", {
+            titleRunId,
+            movieTitle,
+            rowIndex: row.rowIndex,
+            profileFullName
+          });
+        }
+
+        if (shouldUseFixtureOnly || (shouldUseHybrid && profileFullName === "__CHALLENGE__")) {
+          const fixture = findFixture(fixtures, movieTitle, row.listedFullName, row.profileUrl);
+
+          if (fixture && fixture.profileFullName) {
+            profileFullName = fixture.profileFullName;
+            sourcePage = "fixture";
+            status = "passed";
+            errorMessage = "";
+            logger.info("FIXTURE_PROFILE_APPLIED", {
+              titleRunId,
+              movieTitle,
+              rowIndex: row.rowIndex,
+              listedFullName: row.listedFullName,
+              profileFullName
+            });
+          }
+        }
 
         if (profileFullName === "__CHALLENGE__") {
           profileFullName = "";
@@ -115,7 +140,7 @@ async function scrapeTitle(page, movieUrl, context = {}) {
           errorMessage = "IMDb profile page blocked by AWS WAF challenge";
           matchStatus = "blocked";
         } else {
-          if (profileFullName) {
+          if (profileFullName && sourcePage !== "fixture") {
             sourcePage = "profile";
           }
           matchStatus = getMatchStatus(row.listedFullName, profileFullName || row.listedFullName);

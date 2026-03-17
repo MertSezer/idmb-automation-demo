@@ -18,6 +18,10 @@ module.exports = {
   logLevel: process.env.LOG_LEVEL || "INFO",
   outputDir: process.env.OUTPUT_DIR || "output",
   inputFile: process.env.INPUT_FILE || "input/urls.txt",
+
+  profileSource: process.env.PROFILE_SOURCE || "live",
+  fixtureFile: process.env.FIXTURE_FILE || "input/profile-fixtures.json",
+
   paths: {
     outputRoot: path.resolve(process.env.OUTPUT_DIR || "output"),
     resultsDir: path.resolve(process.env.OUTPUT_DIR || "output", "results"),
