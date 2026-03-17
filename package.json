@@ -10,7 +10,8 @@
     "install:browsers": "npx playwright install chromium",
     "report": "node src/report/generateReport.js",
     "validate": "node src/report/validateRun.js",
-    "start:validated": "node src/index.js && node src/report/generateReport.js && node src/report/validateRun.js"
+    "start:validated": "node src/index.js && node src/report/generateReport.js && node src/report/validateRun.js",
+    "demo": "npm run start:validated && cat output/report/summary.json"
   },
   "dependencies": {
     "csv-stringify": "^6.6.0",
