@@ -1,0 +1,236 @@
+const fs = require("fs");
+const path = require("path");
+
+function ensureDir(dirPath) {
+  fs.mkdirSync(dirPath, { recursive: true });
+}
+
+function readJsonSafe(filePath, fallback = []) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  } catch {
+    return fallback;
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function toCountMap(items, key) {
+  const map = {};
+  for (const item of items) {
+    const k = item?.[key] ?? "";
+    map[k] = (map[k] || 0) + 1;
+  }
+  return map;
+}
+
+function toErrorMap(items) {
+  const map = {};
+  for (const item of items) {
+    const k = item?.errorMessage || "";
+    if (!k) continue;
+    map[k] = (map[k] || 0) + 1;
+  }
+  return map;
+}
+
+function relFromReport(absPath, projectRoot) {
+  if (!absPath) return "";
+  const rel = path.relative(path.join(projectRoot, "output", "report"), absPath);
+  return rel.split(path.sep).join("/");
+}
+
+function badgeClass(value) {
+  if (value === "passed") return "badge green";
+  if (value === "warning") return "badge yellow";
+  if (value === "blocked") return "badge red";
+  if (value === "matched") return "badge green";
+  return "badge gray";
+}
+
+function renderCounterList(obj) {
+  const entries = Object.entries(obj || {});
+  if (!entries.length) return "<div class=\"muted\">No data</div>";
+  return entries
+    .map(([k, v]) => `<div class="kv"><span>${escapeHtml(k || "(empty)")}</span><strong>${v}</strong></div>`)
+    .join("");
+}
+
+function renderRows(rows, projectRoot) {
+  return rows.map((row) => {
+    const titleShot = relFromReport(row.titleScreenshotPath, projectRoot);
+    const castShot = relFromReport(row.castSectionScreenshotPath, projectRoot);
+    const rowShot = relFromReport(row.rowScreenshotPath, projectRoot);
+    const profileShot = relFromReport(row.profileScreenshotPath, projectRoot);
+
+    return `
+      <tr>
+        <td>${escapeHtml(row.movieTitle)}</td>
+        <td>${row.rowIndex ?? ""}</td>
+        <td>${escapeHtml(row.listedFullName)}</td>
+        <td>${escapeHtml(row.profileFullName || "")}</td>
+        <td><span class="${badgeClass(row.matchStatus)}">${escapeHtml(row.matchStatus)}</span></td>
+        <td><span class="${badgeClass(row.status)}">${escapeHtml(row.status)}</span></td>
+        <td>${escapeHtml(row.errorMessage || "")}</td>
+        <td class="links">
+          ${titleShot ? `<a href="${titleShot}" target="_blank">title</a>` : ""}
+          ${castShot ? `<a href="${castShot}" target="_blank">cast</a>` : ""}
+          ${rowShot ? `<a href="${rowShot}" target="_blank">row</a>` : ""}
+          ${profileShot ? `<a href="${profileShot}" target="_blank">profile</a>` : ""}
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderGallery(rows, projectRoot) {
+  return rows.slice(0, 12).map((row) => {
+    const img = relFromReport(row.rowScreenshotPath || row.castSectionScreenshotPath || row.titleScreenshotPath, projectRoot);
+    if (!img) return "";
+    return `
+      <div class="card">
+        <img src="${img}" alt="${escapeHtml(row.movieTitle)}">
+        <div class="card-body">
+          <div class="card-title">${escapeHtml(row.movieTitle)}</div>
+          <div class="card-sub">${escapeHtml(row.listedFullName)}</div>
+          <div><span class="${badgeClass(row.matchStatus)}">${escapeHtml(row.matchStatus)}</span></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function main() {
+  const projectRoot = process.cwd();
+  const outputDir = path.join(projectRoot, "output");
+  const reportDir = path.join(outputDir, "report");
+  const resultsPath = path.join(outputDir, "results", "results.json");
+
+  ensureDir(reportDir);
+
+  const results = readJsonSafe(resultsPath, []);
+  const uniquePeople = new Set(results.map(x => x.fullName).filter(Boolean)).size;
+
+  const summary = {
+    totalRows: results.length,
+    uniquePeople,
+    statusCounts: toCountMap(results, "status"),
+    matchStatusCounts: toCountMap(results, "matchStatus"),
+    errorCounts: toErrorMap(results),
+    generatedAt: new Date().toISOString()
+  };
+
+  fs.writeFileSync(
+    path.join(reportDir, "summary.json"),
+    JSON.stringify(summary, null, 2),
+    "utf-8"
+  );
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>IMDb Automation Demo Report</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; background: #0b1020; color: #e8ecf3; }
+    h1, h2, h3 { margin-top: 0; }
+    .muted { color: #9aa4b2; }
+    .grid { display: grid; gap: 16px; }
+    .grid.cards { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 20px; }
+    .panel { background: #121a2b; border: 1px solid #243047; border-radius: 14px; padding: 16px; }
+    .big { font-size: 28px; font-weight: 700; margin-top: 6px; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .green { background: #143d2b; color: #86efac; }
+    .yellow { background: #3f3213; color: #fcd34d; }
+    .red { background: #451a1a; color: #fca5a5; }
+    .gray { background: #334155; color: #e2e8f0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .kv { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #243047; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid #243047; padding: 10px 8px; text-align: left; vertical-align: top; }
+    th { background: #182235; position: sticky; top: 0; }
+    .table-wrap { overflow: auto; max-height: 520px; }
+    .links a { color: #93c5fd; text-decoration: none; margin-right: 8px; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .card { background: #121a2b; border: 1px solid #243047; border-radius: 14px; overflow: hidden; }
+    .card img { width: 100%; height: 180px; object-fit: cover; background: #0f172a; }
+    .card-body { padding: 12px; }
+    .card-title { font-weight: 700; margin-bottom: 4px; }
+    .card-sub { color: #9aa4b2; margin-bottom: 8px; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>IMDb Automation Demo Report</h1>
+  <div class="muted">Generated at: ${escapeHtml(summary.generatedAt)}</div>
+
+  <div class="grid cards">
+    <div class="panel"><div class="muted">Total Rows</div><div class="big">${summary.totalRows}</div></div>
+    <div class="panel"><div class="muted">Unique People</div><div class="big">${uniquePeople}</div></div>
+    <div class="panel"><div class="muted">Passed</div><div class="big">${summary.statusCounts.passed || 0}</div></div>
+    <div class="panel"><div class="muted">Warnings</div><div class="big">${summary.statusCounts.warning || 0}</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <h3>Status Counts</h3>
+      ${renderCounterList(summary.statusCounts)}
+    </div>
+    <div class="panel">
+      <h3>Match Status Counts</h3>
+      ${renderCounterList(summary.matchStatusCounts)}
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <h3>Error Counts</h3>
+    ${renderCounterList(summary.errorCounts)}
+  </div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <h2>Results Table</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Movie</th>
+            <th>Row</th>
+            <th>Listed Name</th>
+            <th>Profile Name</th>
+            <th>Match</th>
+            <th>Status</th>
+            <th>Error</th>
+            <th>Evidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${renderRows(results, projectRoot)}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2>Evidence Gallery</h2>
+  <div class="gallery">
+    ${renderGallery(results, projectRoot)}
+  </div>
+</body>
+</html>`;
+
+  fs.writeFileSync(path.join(reportDir, "report.html"), html, "utf-8");
+
+  console.log("REPORT_GENERATED", {
+    summaryPath: path.join(reportDir, "summary.json"),
+    reportPath: path.join(reportDir, "report.html")
+  });
+}
+
+main();

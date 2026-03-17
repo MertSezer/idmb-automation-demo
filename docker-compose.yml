@@ -1,0 +1,25 @@
+services:
+  imdb-automation:
+    build: .
+    container_name: imdb-automation
+    working_dir: /app
+    environment:
+      HEADLESS: "true"
+      BROWSER: "chromium"
+      SLOW_MO: "0"
+      NAVIGATION_TIMEOUT: "45000"
+      ACTION_TIMEOUT: "15000"
+      MAX_RETRIES: "2"
+      TAKE_SCREENSHOTS: "true"
+      USE_PROFILE_VISIT: "true"
+      TITLE_LIMIT: "5"
+      MAX_CAST_PER_TITLE: "5"
+      STRICT_VALIDATION: "false"
+      APP_PORT: "8000"
+      LOG_LEVEL: "INFO"
+      OUTPUT_DIR: "output"
+      INPUT_FILE: "input/urls.txt"
+    volumes:
+      - ./output:/app/output:Z
+      - ./input:/app/input:Z
+    command: ["npm", "run", "start:validated"]

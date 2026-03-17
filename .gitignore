@@ -1,0 +1,10 @@
+node_modules/
+output/
+.env
+.env.bak
+*.bak
+.DS_Store
+
+Y
+imdb-automation-demo@1.0.0
+node

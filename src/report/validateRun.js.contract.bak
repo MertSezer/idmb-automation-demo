@@ -1,0 +1,61 @@
+const fs = require("fs");
+const path = require("path");
+
+function readJsonSafe(filePath, fallback = null) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  } catch {
+    return fallback;
+  }
+}
+
+function main() {
+  const projectRoot = process.cwd();
+  const summaryPath = path.join(projectRoot, "output", "report", "summary.json");
+
+  const summary = readJsonSafe(summaryPath, null);
+
+  if (!summary) {
+    console.error("RUN_VALIDATION_FAILED", {
+      reason: "summary.json not found or invalid",
+      summaryPath
+    });
+    process.exit(10);
+  }
+
+  const totalRows = Number(summary.totalRows || 0);
+  const blocked = Number(summary.profileBlocked || 0);
+  const warnings = Number(summary.warningCount || 0);
+  const verdict = String(summary.runVerdict || "");
+
+  let validationStatus = "UNKNOWN";
+  let exitCode = 0;
+
+  if (totalRows === 0) {
+    validationStatus = "FAILED_NO_ROWS";
+    exitCode = 20;
+  } else if (blocked === totalRows && totalRows > 0) {
+    validationStatus = "PARTIAL_SUCCESS_ALL_PROFILES_BLOCKED";
+    exitCode = 2;
+  } else if (warnings > 0) {
+    validationStatus = "SUCCESS_WITH_WARNINGS";
+    exitCode = 1;
+  } else {
+    validationStatus = "SUCCESS";
+    exitCode = 0;
+  }
+
+  const payload = {
+    validationStatus,
+    exitCode,
+    verdict,
+    totalRows,
+    blocked,
+    warnings
+  };
+
+  console.log("RUN_VALIDATION_RESULT", payload);
+  process.exit(exitCode);
+}
+
+main();

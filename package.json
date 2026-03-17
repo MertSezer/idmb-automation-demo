@@ -1,0 +1,20 @@
+{
+  "name": "imdb-automation-demo",
+  "version": "1.0.0",
+  "description": "IMDb automation demo with Playwright",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js && node src/report/generateReport.js",
+    "dev": "node src/index.js",
+    "install:browsers": "npx playwright install chromium",
+    "report": "node src/report/generateReport.js",
+    "validate": "node src/report/validateRun.js",
+    "start:validated": "node src/index.js && node src/report/generateReport.js && node src/report/validateRun.js"
+  },
+  "dependencies": {
+    "csv-stringify": "^6.6.0",
+    "dotenv": "^17.3.1",
+    "playwright": "^1.58.2"
+  }
+}
