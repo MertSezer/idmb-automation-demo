@@ -134,3 +134,13 @@ npm run start:validated
 This is not an unhandled runtime failure.
 
 The current environment allows successful title-page extraction, but IMDb profile pages are blocked by AWS WAF during automated profile navigation. The application detects and reports this as an expected validation outcome.
+
+## Validated Demo Status
+
+- Commit: `c798a59`
+- Tag: `demo-ready`
+- Command: `npm run start:validated`
+- Result: `SUCCESS`
+- Rows matched: `23/23`
+- Blocked: `0`
+- Warnings: `0`

@@ -1,0 +1,7 @@
+Commit: c798a59
+Tag: demo-ready
+Run: npm run start:validated
+Result: SUCCESS
+Rows matched: 23/23
+Blocked: 0
+Warnings: 0
