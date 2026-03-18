@@ -12,7 +12,8 @@
     "validate": "node src/report/validateRun.js",
     "start:validated": "node src/index.js && node src/report/generateReport.js && node src/report/validateRun.js",
     "demo": "npm run start:validated && cat output/report/summary.json",
-    "report:dashboard": "node scripts/build-dashboard.js"
+    "report:dashboard": "node scripts/build-dashboard.js",
+    "start:validated:dashboard": "npm run start:validated; npm run report:dashboard"
   },
   "dependencies": {
     "csv-stringify": "^6.6.0",
