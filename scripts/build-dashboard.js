@@ -127,6 +127,94 @@ function buildMetricCard(label, value, tone = "neutral") {
   `;
 }
 
+function polarToCartesian(cx, cy, r, angle) {
+  const rad = ((angle - 90) * Math.PI) / 180;
+  return {
+    x: cx + r * Math.cos(rad),
+    y: cy + r * Math.sin(rad)
+  };
+}
+
+function describeArc(cx, cy, r, startAngle, endAngle) {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+}
+
+function buildDonutChart(items, total) {
+  const safeTotal = total > 0 ? total : 1;
+  const radius = 52;
+  const cx = 70;
+  const cy = 70;
+
+  let currentAngle = 0;
+  const paths = items
+    .filter((item) => item.value > 0)
+    .map((item) => {
+      const angle = (item.value / safeTotal) * 360;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + angle;
+      currentAngle = endAngle;
+
+      return `<path d="${describeArc(cx, cy, radius, startAngle, endAngle)}" stroke="${item.color}" stroke-width="18" fill="none" stroke-linecap="round"></path>`;
+    })
+    .join("");
+
+  const legend = items
+    .map(
+      (item) => `
+      <div class="legend-item">
+        <span class="legend-dot" style="background:${item.color}"></span>
+        <span class="legend-name">${escapeHtml(item.label)}</span>
+        <strong>${item.value}</strong>
+      </div>
+    `
+    )
+    .join("");
+
+  return `
+    <div class="viz-card">
+      <div class="donut-wrap">
+        <svg viewBox="0 0 140 140" class="donut-chart" aria-label="Outcome distribution">
+          <circle cx="70" cy="70" r="52" stroke="#233055" stroke-width="18" fill="none"></circle>
+          ${paths}
+          <text x="70" y="66" text-anchor="middle" class="donut-total">${safeTotal}</text>
+          <text x="70" y="84" text-anchor="middle" class="donut-sub">rows</text>
+        </svg>
+      </div>
+      <div class="legend">
+        ${legend}
+      </div>
+    </div>
+  `;
+}
+
+function buildMiniBars(rows, valueKey, totalKey) {
+  return `
+    <div class="mini-bars">
+      ${rows
+        .map((row) => {
+          const total = Number(row[totalKey] || 0) || 1;
+          const value = Number(row[valueKey] || 0);
+          const pct = Math.max(0, Math.min(100, (value / total) * 100));
+          return `
+            <div class="mini-bar-item">
+              <div class="mini-bar-head">
+                <span>${escapeHtml(row.movieTitle)}</span>
+                <strong>${value}/${total}</strong>
+              </div>
+              <div class="mini-bar-track">
+                <div class="mini-bar-fill" style="width:${pct.toFixed(2)}%"></div>
+              </div>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
 function buildBar(label, value, total) {
   const safeTotal = total > 0 ? total : 1;
   const percent = Math.max(0, Math.min(100, (value / safeTotal) * 100));
@@ -506,6 +594,93 @@ function render(summary, results) {
       flex-wrap: wrap;
     }
 
+    .viz-card {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .donut-chart {
+      width: 150px;
+      height: 150px;
+    }
+
+    .donut-total {
+      fill: var(--text);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .donut-sub {
+      fill: var(--muted);
+      font-size: 11px;
+    }
+
+    .legend {
+      display: grid;
+      gap: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .legend-name {
+      flex: 1;
+    }
+
+    .mini-bars {
+      display: grid;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .mini-bar-item {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .mini-bar-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mini-bar-track {
+      height: 10px;
+      background: #0f1630;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .mini-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #f59e0b);
+    }
+
     .search-input {
       width: 100%;
       max-width: 360px;
@@ -588,12 +763,23 @@ function render(summary, results) {
     <section class="section grid-2">
       <div>
         <h2>Outcome Distribution</h2>
-        ${buildBar(`Blocked (${blockedPct}%)`, blocked, totalRows)}
-        ${buildBar(`Matched (${matchedPct}%)`, matched, totalRows)}
-        ${buildBar(`Passed (${passedPct}%)`, passed, totalRows)}
-        ${buildBar("Warnings", warnings, totalRows)}
-        ${buildBar(`Fixture-backed (${fixturePct}%)`, fixtureBacked, totalRows)}
-        ${buildBar(`Live rows (${livePct}%)`, liveCount, totalRows)}
+        ${buildDonutChart(
+          [
+            { label: "Blocked", value: blocked, color: "#ef4444" },
+            { label: "Matched", value: matched, color: "#22c55e" },
+            { label: "Fixture", value: fixtureBacked, color: "#f59e0b" },
+            { label: "Other", value: Math.max(0, totalRows - blocked - matched - fixtureBacked), color: "#6366f1" }
+          ],
+          totalRows
+        )}
+        <div style="margin-top:14px">
+          ${buildBar(`Blocked (${blockedPct}%)`, blocked, totalRows)}
+          ${buildBar(`Matched (${matchedPct}%)`, matched, totalRows)}
+          ${buildBar(`Passed (${passedPct}%)`, passed, totalRows)}
+          ${buildBar("Warnings", warnings, totalRows)}
+          ${buildBar(`Fixture-backed (${fixturePct}%)`, fixtureBacked, totalRows)}
+          ${buildBar(`Live rows (${livePct}%)`, liveCount, totalRows)}
+        </div>
       </div>
       <div>
         <h2>Top Blocked Titles</h2>
@@ -608,6 +794,8 @@ function render(summary, results) {
             </div>
           `).join("")}
         </div>
+        <h3 style="margin-top:16px">Blocked Ratio by Title</h3>
+        ${buildMiniBars(topBlockedTitles, "blocked", "total")}
       </div>
     </section>
 
