@@ -270,14 +270,14 @@ function buildTitleTable(rows) {
     <table id="title-table">
       <thead>
         <tr>
-          <th>Title</th>
+          <th class="sortable" data-sort-type="text" data-col="0">Title<span class="sort-indicator">↕</span></th>
           <th>IMDb</th>
-          <th>Total Rows</th>
-          <th>Passed</th>
-          <th>Warnings</th>
-          <th>Blocked</th>
-          <th>Matched</th>
-          <th>Fixture-backed</th>
+          <th class="sortable" data-sort-type="number" data-col="2">Total Rows<span class="sort-indicator">↕</span></th>
+          <th class="sortable" data-sort-type="number" data-col="3">Passed<span class="sort-indicator">↕</span></th>
+          <th class="sortable" data-sort-type="number" data-col="4">Warnings<span class="sort-indicator">↕</span></th>
+          <th class="sortable" data-sort-type="number" data-col="5">Blocked<span class="sort-indicator">↕</span></th>
+          <th class="sortable" data-sort-type="number" data-col="6">Matched<span class="sort-indicator">↕</span></th>
+          <th class="sortable" data-sort-type="number" data-col="7">Fixture-backed<span class="sort-indicator">↕</span></th>
         </tr>
       </thead>
       <tbody>${body}</tbody>
@@ -692,6 +692,32 @@ function render(summary, results) {
       outline: none;
     }
 
+    .action-btn {
+      background: #1f2a52;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .action-btn:hover {
+      background: #253161;
+    }
+
+    .sortable {
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .sort-indicator {
+      color: var(--muted);
+      font-size: 11px;
+      margin-left: 6px;
+    }
+
     .mini-list {
       display: grid;
       gap: 10px;
@@ -803,7 +829,8 @@ function render(summary, results) {
       <h2>Per-Title Breakdown</h2>
       <div class="toolbar">
         <input id="title-search" class="search-input" type="text" placeholder="Filter titles..." />
-        <span class="muted">Search by title or metric values.</span>
+        <button id="export-title-csv" class="action-btn" type="button">Export visible rows (CSV)</button>
+        <span class="muted">Search by title or metric values. Click table headers to sort.</span>
       </div>
       ${buildTitleTable(titleRows)}
     </section>
@@ -828,16 +855,85 @@ function render(summary, results) {
     (function () {
       const input = document.getElementById("title-search");
       const table = document.getElementById("title-table");
-      if (!input || !table) return;
+      const exportBtn = document.getElementById("export-title-csv");
+      if (!table) return;
 
-      input.addEventListener("input", function () {
-        const q = String(input.value || "").toLowerCase().trim();
-        const rows = table.querySelectorAll("tbody tr");
-        rows.forEach((row) => {
+      function getBodyRows() {
+        return Array.from(table.querySelectorAll("tbody tr"));
+      }
+
+      function applyFilter() {
+        const q = input ? String(input.value || "").toLowerCase().trim() : "";
+        getBodyRows().forEach((row) => {
           const hay = String(row.getAttribute("data-search") || "");
           row.style.display = !q || hay.includes(q) ? "" : "none";
         });
+      }
+
+      if (input) {
+        input.addEventListener("input", applyFilter);
+      }
+
+      const headers = Array.from(table.querySelectorAll("thead th.sortable"));
+      headers.forEach((th) => {
+        let asc = true;
+        th.addEventListener("click", function () {
+          const tbody = table.querySelector("tbody");
+          const rows = getBodyRows();
+          const col = Number(th.getAttribute("data-col"));
+          const type = th.getAttribute("data-sort-type") || "text";
+
+          rows.sort((a, b) => {
+            const aText = (a.children[col]?.innerText || "").trim();
+            const bText = (b.children[col]?.innerText || "").trim();
+
+            if (type === "number") {
+              const av = Number(aText) || 0;
+              const bv = Number(bText) || 0;
+              return asc ? av - bv : bv - av;
+            }
+
+            return asc
+              ? aText.localeCompare(bText)
+              : bText.localeCompare(aText);
+          });
+
+          rows.forEach((row) => tbody.appendChild(row));
+          asc = !asc;
+          applyFilter();
+        });
       });
+
+      if (exportBtn) {
+        exportBtn.addEventListener("click", function () {
+          const rows = getBodyRows().filter((row) => row.style.display !== "none");
+          const headerCells = Array.from(table.querySelectorAll("thead th")).map((th) =>
+            '"' + (th.innerText || "").replace(/↕/g, "").trim().replace(/"/g, '""') + '"'
+          );
+
+          const csvRows = [headerCells.join(",")];
+
+          rows.forEach((row) => {
+            const cells = Array.from(row.children).map((td) => {
+              const text = (td.innerText || "").replace(/\n+/g, " ").trim();
+              return '"' + text.replace(/"/g, '""') + '"';
+            });
+            csvRows.push(cells.join(","));
+          });
+
+          const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "title-breakdown.csv";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        });
+      }
+
+      applyFilter();
     })();
   </script>
 </body>
