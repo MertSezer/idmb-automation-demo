@@ -96,6 +96,15 @@ function aggregateErrors(results) {
     .sort((a, b) => b.count - a.count);
 }
 
+function aggregateTopBlockedTitles(rows, limit = 8) {
+  return [...rows]
+    .sort((a, b) => {
+      if (b.blocked !== a.blocked) return b.blocked - a.blocked;
+      return a.movieTitle.localeCompare(b.movieTitle);
+    })
+    .slice(0, limit);
+}
+
 function aggregateTopPeople(results, limit = 15) {
   return results
     .map((row) => ({
@@ -132,12 +141,31 @@ function buildBar(label, value, total) {
   `;
 }
 
+function buildBadge(value, kind = "neutral") {
+  return `<span class="badge badge-${escapeHtml(kind)}">${escapeHtml(value)}</span>`;
+}
+
 function buildTitleTable(rows) {
   const body = rows
-    .map(
-      (row) => `
-      <tr>
-        <td>${escapeHtml(row.movieTitle)}</td>
+    .map((row) => {
+      const dominant =
+        row.blocked > 0 ? buildBadge("blocked", "bad")
+        : row.passed > 0 ? buildBadge("passed", "good")
+        : buildBadge("mixed", "warn");
+
+      const searchText = [
+        row.movieTitle,
+        row.total,
+        row.passed,
+        row.warning,
+        row.blocked,
+        row.matched,
+        row.fixtureBacked
+      ].join(" ").toLowerCase();
+
+      return `
+      <tr data-search="${escapeHtml(searchText)}">
+        <td>${escapeHtml(row.movieTitle)}<div class="cell-sub">${dominant}</div></td>
         <td>${row.movieUrl ? `<a href="${escapeHtml(row.movieUrl)}" target="_blank" rel="noreferrer">open</a>` : "-"}</td>
         <td>${row.total}</td>
         <td>${row.passed}</td>
@@ -146,12 +174,12 @@ function buildTitleTable(rows) {
         <td>${row.matched}</td>
         <td>${row.fixtureBacked}</td>
       </tr>
-    `
-    )
+    `;
+    })
     .join("");
 
   return `
-    <table>
+    <table id="title-table">
       <thead>
         <tr>
           <th>Title</th>
@@ -196,18 +224,32 @@ function buildErrorTable(rows) {
 
 function buildSampleTable(rows) {
   const body = rows
-    .map(
-      (row) => `
+    .map((row) => {
+      const statusBadge =
+        row.status === "passed" ? buildBadge(row.status, "good")
+        : row.status === "warning" ? buildBadge(row.status, "warn")
+        : buildBadge(row.status || "-", "neutral");
+
+      const matchBadge =
+        row.matchStatus === "matched" ? buildBadge(row.matchStatus, "good")
+        : row.matchStatus === "blocked" ? buildBadge(row.matchStatus, "bad")
+        : buildBadge(row.matchStatus || "-", "neutral");
+
+      const sourceBadge =
+        row.sourcePage === "fixture" ? buildBadge("fixture", "warn")
+        : buildBadge(row.sourcePage || "-", "neutral");
+
+      return `
       <tr>
         <td>${escapeHtml(row.fullName)}</td>
         <td>${escapeHtml(row.movieTitle)}</td>
-        <td>${escapeHtml(row.status)}</td>
-        <td>${escapeHtml(row.matchStatus)}</td>
-        <td>${escapeHtml(row.sourcePage)}</td>
+        <td>${statusBadge}</td>
+        <td>${matchBadge}</td>
+        <td>${sourceBadge}</td>
         <td>${row.profileUrl ? `<a href="${escapeHtml(row.profileUrl)}" target="_blank" rel="noreferrer">profile</a>` : "-"}</td>
       </tr>
-    `
-    )
+    `;
+    })
     .join("");
 
   return `
@@ -230,6 +272,7 @@ function buildSampleTable(rows) {
 function render(summary, results) {
   const titleRows = aggregateByTitle(results);
   const errorRows = aggregateErrors(results);
+  const topBlockedTitles = aggregateTopBlockedTitles(titleRows, 8);
   const sampleRows = aggregateTopPeople(results, 20);
 
   const totalRows = Number(summary.totalRows || 0);
@@ -242,6 +285,9 @@ function render(summary, results) {
   const blockedPct = totalRows ? ((blocked / totalRows) * 100).toFixed(1) : "0.0";
   const matchedPct = totalRows ? ((matched / totalRows) * 100).toFixed(1) : "0.0";
   const passedPct = totalRows ? ((passed / totalRows) * 100).toFixed(1) : "0.0";
+  const fixturePct = totalRows ? ((fixtureBacked / totalRows) * 100).toFixed(1) : "0.0";
+  const liveCount = totalRows - fixtureBacked;
+  const livePct = totalRows ? ((liveCount / totalRows) * 100).toFixed(1) : "0.0";
 
   return `<!doctype html>
 <html lang="en">
@@ -419,6 +465,79 @@ function render(summary, results) {
       padding: 12px 0 32px;
     }
 
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+    }
+
+    .badge-good {
+      background: rgba(31, 157, 85, 0.18);
+      color: #9af5be;
+    }
+
+    .badge-warn {
+      background: rgba(217, 119, 6, 0.18);
+      color: #ffd48c;
+    }
+
+    .badge-bad {
+      background: rgba(220, 38, 38, 0.18);
+      color: #ffaaaa;
+    }
+
+    .badge-neutral {
+      background: rgba(79, 70, 229, 0.18);
+      color: #c7c4ff;
+    }
+
+    .cell-sub {
+      margin-top: 6px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin: 12px 0 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      width: 100%;
+      max-width: 360px;
+      background: #0f1630;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .mini-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .mini-item strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
     @media (max-width: 1000px) {
       .hero-grid, .grid-2, .metrics {
         grid-template-columns: 1fr;
@@ -459,6 +578,8 @@ function render(summary, results) {
         ${buildMetricCard("Warnings", summary.warningCount, "warn")}
         ${buildMetricCard("Blocked", summary.profileBlocked, "bad")}
         ${buildMetricCard("Matched", summary.matchedCount, "good")}
+        ${buildMetricCard("Live Rows", liveCount, "neutral")}
+        ${buildMetricCard("Fixture Rows", fixtureBacked, "warn")}
         ${buildMetricCard("Screenshots", summary.evidenceScreenshotCount, "neutral")}
         ${buildMetricCard("Debug Evidence", summary.debugEvidenceCount, "neutral")}
       </div>
@@ -471,20 +592,31 @@ function render(summary, results) {
         ${buildBar(`Matched (${matchedPct}%)`, matched, totalRows)}
         ${buildBar(`Passed (${passedPct}%)`, passed, totalRows)}
         ${buildBar("Warnings", warnings, totalRows)}
-        ${buildBar("Fixture-backed", fixtureBacked, totalRows)}
+        ${buildBar(`Fixture-backed (${fixturePct}%)`, fixtureBacked, totalRows)}
+        ${buildBar(`Live rows (${livePct}%)`, liveCount, totalRows)}
       </div>
       <div>
-        <h2>Key Notes</h2>
-        <ul>
-          <li>Blocked rows indicate live IMDb profile navigation hit AWS WAF challenge behavior.</li>
-          <li>Fixture-backed rows indicate fallback-assisted completion instead of live profile extraction.</li>
-          <li>This run should be interpreted as a controlled partial-success result, not a runtime crash.</li>
-        </ul>
+        <h2>Top Blocked Titles</h2>
+        <div class="mini-list">
+          ${topBlockedTitles.map((row) => `
+            <div class="mini-item">
+              <div>
+                <strong>${escapeHtml(row.movieTitle)}</strong>
+                <div class="muted">Total: ${row.total} · Matched: ${row.matched} · Fixture: ${row.fixtureBacked}</div>
+              </div>
+              <div>${buildBadge(`${row.blocked} blocked`, "bad")}</div>
+            </div>
+          `).join("")}
+        </div>
       </div>
     </section>
 
     <section class="section">
       <h2>Per-Title Breakdown</h2>
+      <div class="toolbar">
+        <input id="title-search" class="search-input" type="text" placeholder="Filter titles..." />
+        <span class="muted">Search by title or metric values.</span>
+      </div>
       ${buildTitleTable(titleRows)}
     </section>
 
@@ -503,6 +635,23 @@ function render(summary, results) {
       IMDb Automation Demo Dashboard
     </div>
   </div>
+
+  <script>
+    (function () {
+      const input = document.getElementById("title-search");
+      const table = document.getElementById("title-table");
+      if (!input || !table) return;
+
+      input.addEventListener("input", function () {
+        const q = String(input.value || "").toLowerCase().trim();
+        const rows = table.querySelectorAll("tbody tr");
+        rows.forEach((row) => {
+          const hay = String(row.getAttribute("data-search") || "");
+          row.style.display = !q || hay.includes(q) ? "" : "none";
+        });
+      });
+    })();
+  </script>
 </body>
 </html>`;
 }
