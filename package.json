@@ -13,11 +13,13 @@
     "start:validated": "node src/index.js && node src/report/generateReport.js && node src/report/validateRun.js",
     "demo": "npm run start:validated && cat output/report/summary.json",
     "report:dashboard": "node scripts/build-dashboard.js",
-    "start:validated:dashboard": "npm run start:validated; npm run report:dashboard"
+    "start:validated:dashboard": "npm run start:validated; npm run report:dashboard",
+    "demo:web": "node demo/server.js"
   },
   "dependencies": {
     "csv-stringify": "^6.6.0",
     "dotenv": "^17.3.1",
+    "express": "^5.2.1",
     "playwright": "^1.58.2"
   }
 }
