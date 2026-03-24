@@ -19,6 +19,13 @@ function normalizeForMatch(value) {
   return cleanName(value).toLowerCase();
 }
 
+function normalizeProfileDisplayName(value) {
+  if (!value) return "";
+  return String(value)
+    .replace(/\s*\((?:[IVXLCDM]+|\d{4}-\d{4}|\d{4}-|\d{4})\)\s*$/i, "")
+    .trim();
+}
+
 function getMatchStatus(listedFullName, profileFullName) {
   if (!listedFullName || !profileFullName) return "unknown";
   return normalizeForMatch(listedFullName) === normalizeForMatch(profileFullName)
@@ -49,7 +56,7 @@ async function scrapeTitle(page, movieUrl, context = {}) {
     screenshotPath: castSectionScreenshotPath
   });
 
-  const castRows = await getCastRows(page, config.maxCastPerTitle);
+  const castRows = await getCastRows(page, config.maxCastPerTitle || config.castLimit || 5);
   logger.info("CAST_ROWS_DISCOVERED", {
     titleRunId,
     movieTitle,
@@ -105,7 +112,7 @@ async function scrapeTitle(page, movieUrl, context = {}) {
           profileScreenshotPath =
             (await maybeScreenshot(profilePage, `${rowFileBase}_profile.png`)) || "";
 
-          profileFullName = await getProfileFullName(profilePage, `${movieTitle}_row_${row.rowIndex}_profile`);
+          profileFullName = normalizeProfileDisplayName(await getProfileFullName(profilePage, `${movieTitle}_row_${row.rowIndex}_profile`));
 
           logger.info("PROFILE_NAME_EXTRACTED", {
             titleRunId,
