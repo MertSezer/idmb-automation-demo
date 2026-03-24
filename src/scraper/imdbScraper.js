@@ -84,7 +84,8 @@ async function scrapeTitle(page, movieUrl, context = {}) {
         titleRunId,
         movieTitle,
         rowIndex: row.rowIndex,
-        listedFullName: row.listedFullName,
+        characterName: row.characterName,
+      listedFullName: row.listedFullName,
         profileUrl: row.profileUrl
       });
 
@@ -134,7 +135,8 @@ async function scrapeTitle(page, movieUrl, context = {}) {
               titleRunId,
               movieTitle,
               rowIndex: row.rowIndex,
-              listedFullName: row.listedFullName,
+              characterName: row.characterName,
+      listedFullName: row.listedFullName,
               profileFullName
             });
           }
@@ -157,7 +159,8 @@ async function scrapeTitle(page, movieUrl, context = {}) {
           titleRunId,
           movieTitle,
           rowIndex: row.rowIndex,
-          listedFullName: row.listedFullName,
+          characterName: row.characterName,
+      listedFullName: row.listedFullName,
           profileFullName: profileFullName || "",
           matchStatus
         });
@@ -183,7 +186,8 @@ async function scrapeTitle(page, movieUrl, context = {}) {
           movieUrl,
           movieTitle,
           rowIndex: row.rowIndex,
-          listedFullName: row.listedFullName,
+          characterName: row.characterName,
+      listedFullName: row.listedFullName,
           profileFullName,
           name: "",
           surname: "",
@@ -207,7 +211,8 @@ async function scrapeTitle(page, movieUrl, context = {}) {
         movieUrl,
         movieTitle,
         rowIndex: row.rowIndex,
-        listedFullName: row.listedFullName,
+        characterName: row.characterName,
+      listedFullName: row.listedFullName,
         profileFullName,
         name,
         surname,
