@@ -18,7 +18,6 @@ function normalizeProfileUrl(url) {
   }
 }
 
-
 function resolveRowLimit(maxRows) {
   const n = Number(maxRows);
   if (Number.isFinite(n) && n > 0) return Math.floor(n);
@@ -68,7 +67,18 @@ async function getMovieTitle(page) {
 }
 
 async function findCastSection(page) {
-  return { ok: true };
+  const ok = await page.evaluate(() => {
+    const selectors = [
+      '[data-testid="title-cast"]',
+      '[data-testid="title-cast-item"]',
+      '.cast_list',
+      '[data-testid="BottomSheet"]'
+    ];
+
+    return selectors.some((selector) => document.querySelector(selector));
+  }).catch(() => false);
+
+  return { ok };
 }
 
 async function getCastRowsFromJsonLd(page) {
@@ -121,7 +131,7 @@ async function getCastRowsFromJsonLd(page) {
           const profileUrl = normalizeProfileUrl(actor.url || actor.sameAs || "");
 
           if (!listedFullName || !profileUrl) continue;
-          out.push({ listedFullName, profileUrl });
+          out.push({ listedFullName, profileUrl, characterName: "" });
         }
       }
 
@@ -182,39 +192,102 @@ async function getCastRowsFromDom(page) {
       }
     }
 
-    const anchors = Array.from(document.querySelectorAll('a[href*="/name/nm"]'));
-    const rows = [];
+    function getDirectText(el) {
+      if (!el) return "";
+      const parts = [];
 
-    for (const a of anchors) {
-      const listedFullName = cleanText(a.textContent || "");
-      const href = a.getAttribute("href") || "";
-      const profileUrl = normalizeProfileUrl(href);
-      const absHref = a.href || "";
+      for (const node of el.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = cleanText(node.textContent || "");
+          if (text) parts.push(text);
+        }
+      }
+
+      return cleanText(parts.join(" "));
+    }
+
+    function extractCharacterText(row, listedFullName) {
+      const strongCandidates = [
+        row.querySelector('td.character'),
+        row.querySelector('[data-testid="title-cast-item__characters"]'),
+        row.querySelector('[data-testid="cast-item-characters-link"]'),
+        row.querySelector('.character')
+      ];
+
+      for (const el of strongCandidates) {
+        const text = cleanText(el?.textContent || "");
+        if (text && text !== listedFullName) return text;
+      }
+
+      const textNodes = Array.from(
+        row.querySelectorAll('a, span, div, td')
+      )
+        .map((el) => cleanText(el.textContent || ""))
+        .filter(Boolean)
+        .filter((t) => t !== listedFullName)
+        .filter((t) => !t.includes(listedFullName))
+        .filter((t) => t.length <= 80)
+        .filter((t) => !/^more$/i.test(t))
+        .filter((t) => !/^see production/i.test(t))
+        .filter((t) => !/^full cast/i.test(t));
+
+      const unique = [];
+      const seen = new Set();
+
+      for (const item of textNodes) {
+        if (seen.has(item)) continue;
+        seen.add(item);
+        unique.push(item);
+      }
+
+      return unique.length === 1 ? unique[0] : "";
+    }
+
+    function findActorRowNodes() {
+      const testIdRows = Array.from(document.querySelectorAll('[data-testid="title-cast-item"]'));
+      if (testIdRows.length) return testIdRows;
+
+      const tableRows = Array.from(document.querySelectorAll('.cast_list tr'));
+      if (tableRows.length) {
+        return tableRows.filter((tr) => tr.querySelector('a[href*="/name/nm"]'));
+      }
+
+      return [];
+    }
+
+    const rowNodes = findActorRowNodes();
+    const out = [];
+
+    for (const row of rowNodes) {
+      const actorAnchor = row.querySelector('a[href*="/name/nm"]');
+      if (!actorAnchor) continue;
+
+      const listedFullName = cleanText(actorAnchor.textContent || "");
+      const profileUrl = normalizeProfileUrl(actorAnchor.getAttribute("href") || "");
 
       if (!listedFullName || !profileUrl) continue;
       if (listedFullName.length < 3) continue;
 
-      const looksLikeActor =
-        /ref_=tt_ov_3_/i.test(absHref) ||
-        /ref_=tt_cl_/i.test(absHref) ||
-        /ref_=ttfc_fc_/i.test(absHref);
+      const characterName = extractCharacterText(row, listedFullName);
 
-      if (!looksLikeActor) continue;
-
-      rows.push({ listedFullName, profileUrl });
+      out.push({
+        listedFullName,
+        profileUrl,
+        characterName
+      });
     }
 
     const seen = new Set();
-    const out = [];
+    const deduped = [];
 
-    for (const row of rows) {
+    for (const row of out) {
       const key = `${row.listedFullName}|${row.profileUrl}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      out.push(row);
+      deduped.push(row);
     }
 
-    return out;
+    return deduped;
   }).catch(() => []);
 
   return rows;
@@ -222,14 +295,36 @@ async function getCastRowsFromDom(page) {
 
 async function getCastRows(page, maxRows) {
   const jsonLdRows = await getCastRowsFromJsonLd(page);
-  const domRows = jsonLdRows.length > 0 ? jsonLdRows : await getCastRowsFromDom(page);
+  const domRows = await getCastRowsFromDom(page);
 
-  return dedupeRows(domRows)
+  const domByKey = new Map(
+    domRows.map((row) => [`${row.listedFullName}|${row.profileUrl}`, row])
+  );
+
+  const mergedBase = (jsonLdRows.length > 0 ? jsonLdRows : domRows).map((row) => {
+    const key = `${row.listedFullName}|${row.profileUrl}`;
+    const domRow = domByKey.get(key);
+
+    return {
+      listedFullName: cleanText(row.listedFullName),
+      profileUrl: normalizeProfileUrl(row.profileUrl),
+      characterName: cleanText(domRow?.characterName || row.characterName || "")
+    };
+  });
+
+  const merged = mergedBase.length > 0 ? mergedBase : domRows.map((row) => ({
+    listedFullName: cleanText(row.listedFullName),
+    profileUrl: normalizeProfileUrl(row.profileUrl),
+    characterName: cleanText(row.characterName || "")
+  }));
+
+  return dedupeRows(merged)
     .slice(0, resolveRowLimit(maxRows))
     .map((row, index) => ({
       rowIndex: index + 1,
-      listedFullName: cleanText(row.listedFullName),
-      profileUrl: normalizeProfileUrl(row.profileUrl)
+      listedFullName: row.listedFullName,
+      profileUrl: row.profileUrl,
+      characterName: row.characterName
     }));
 }
 
@@ -239,4 +334,3 @@ module.exports = {
   findCastSection,
   getCastRows
 };
-
