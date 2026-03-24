@@ -118,3 +118,15 @@ runBtn.addEventListener("click", async () => {
   await loadSummary();
   await loadResults();
 })();
+
+
+document.getElementById("run1Btn").onclick = () => runWithLimit(1);
+document.getElementById("run5Btn").onclick = () => runWithLimit(5);
+
+function runWithLimit(limit) {
+  fetch("/run", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ limit })
+  });
+}

@@ -92,7 +92,7 @@ app.post("/api/run", (req, res) => {
     return res.status(409).json({ error: "Run already in progress" });
   }
 
-  const child = spawn("npm", ["run", "start:validated"], {
+  const child = spawn("npm", ["run", "start:validated"], { env: { ...process.env, TITLE_LIMIT: req.body.limit || 36 } }, {
     cwd: ROOT,
     shell: true,
     env: process.env,
