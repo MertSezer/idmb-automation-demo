@@ -4,7 +4,7 @@ const fs = require("fs");
 const { spawn } = require("child_process");
 
 const app = express();
-const PORT = Number(process.env.DEMO_PORT || 3000);
+const PORT = Number(process.env.PORT || process.env.DEMO_PORT || 3000);
 const ROOT = path.resolve(__dirname, "..");
 const PUBLIC_DIR = path.join(__dirname, "public");
 const OUTPUT_DIR = path.join(ROOT, "output");
