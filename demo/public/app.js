@@ -35,6 +35,104 @@ function artifactPathToUrl(filePath) {
   return `/artifacts/${relative}`.replaceAll("\\", "/");
 }
 
+function ensureLightbox() {
+  if (document.getElementById("shotLightbox")) return;
+
+  const wrap = document.createElement("div");
+  wrap.id = "shotLightbox";
+  wrap.style.cssText = [
+    "display:none",
+    "position:fixed",
+    "inset:0",
+    "background:rgba(0,0,0,0.82)",
+    "z-index:9999",
+    "padding:24px",
+    "align-items:center",
+    "justify-content:center",
+    "flex-direction:column"
+  ].join(";");
+
+  wrap.innerHTML = `
+    <button id="shotLightboxClose" style="
+      position:absolute;
+      top:18px;
+      right:18px;
+      min-height:40px;
+      padding:0 12px;
+      border-radius:10px;
+      border:1px solid #445;
+      background:#111a;
+      color:#fff;
+      cursor:pointer;
+      font-weight:700;
+    ">Close</button>
+    <div id="shotLightboxLabel" style="
+      color:#fff;
+      margin-bottom:12px;
+      font-weight:700;
+      font-size:14px;
+    "></div>
+    <img id="shotLightboxImg" src="" alt="" style="
+      max-width:95vw;
+      max-height:85vh;
+      border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.45);
+      background:#111;
+    ">
+  `;
+
+  document.body.appendChild(wrap);
+
+  wrap.addEventListener("click", (e) => {
+    if (e.target === wrap || e.target.id === "shotLightboxClose") {
+      wrap.style.display = "none";
+    }
+  });
+}
+
+function openShotPreview(label, url) {
+  ensureLightbox();
+  const wrap = document.getElementById("shotLightbox");
+  const img = document.getElementById("shotLightboxImg");
+  const text = document.getElementById("shotLightboxLabel");
+  if (!wrap || !img || !text) return;
+
+  text.textContent = label || "Screenshot Preview";
+  img.src = url || "";
+  wrap.style.display = "flex";
+}
+
+function shotThumb(label, path) {
+  const url = artifactPathToUrl(path);
+  if (!url) return "";
+
+  return `
+    <div style="display:inline-flex;flex-direction:column;align-items:center;gap:6px;margin-right:8px;margin-bottom:8px;">
+      <button
+        type="button"
+        onclick="openShotPreview(${JSON.stringify(label)}, ${JSON.stringify(url)})"
+        style="
+          border:1px solid #2a3558;
+          background:rgba(255,255,255,0.04);
+          border-radius:10px;
+          padding:4px;
+          cursor:pointer;
+        "
+        title="${escapeHtml(label)}"
+      >
+        <img
+          src="${escapeHtml(url)}"
+          alt="${escapeHtml(label)}"
+          style="width:64px;height:64px;object-fit:cover;border-radius:8px;display:block;"
+        >
+      </button>
+      <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="font-size:12px;">
+        ${escapeHtml(label)}
+      </a>
+    </div>
+  `;
+}
+
 function renderStatus(data) {
   if (!statusBox) return;
 
@@ -193,13 +291,9 @@ function screenshotLinks(row) {
 
   return items
     .filter((item) => item.path)
-    .map((item) => {
-      const url = artifactPathToUrl(item.path);
-      if (!url) return "";
-      return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.label)}</a>`;
-    })
+    .map((item) => shotThumb(item.label, item.path))
     .filter(Boolean)
-    .join(" | ");
+    .join("");
 }
 
 function renderResults(rows) {
@@ -386,6 +480,9 @@ events.onmessage = async (event) => {
 };
 
 (async function init() {
+  ensureLightbox();
+  window.openShotPreview = openShotPreview;
+
   await loadInputUrls();
   await loadTitleStatuses();
   await loadStatus();
