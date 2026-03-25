@@ -1,0 +1,23 @@
+{
+  "validationStatus": "SUCCESS",
+  "exitCode": 0,
+  "verdict": "SUCCESS",
+  "reportStatus": "completed",
+  "extractionStatus": "complete",
+  "rootCause": "",
+  "totals": {
+    "totalRows": 3,
+    "titlesProcessed": 1,
+    "castRowsExtracted": 3,
+    "profileAttempts": 3,
+    "blocked": 0,
+    "warnings": 0
+  },
+  "evidence": {
+    "debugEvidenceCount": 3,
+    "evidenceScreenshotCount": 12
+  },
+  "generatedAt": "2026-03-25T10:18:04.209Z",
+  "summaryPath": "/home/iotiq/imdb-automation-demo/imdb-automation-demo/output/report/summary.json",
+  "reportPath": "/home/iotiq/imdb-automation-demo/imdb-automation-demo/output/report/report.html"
+}

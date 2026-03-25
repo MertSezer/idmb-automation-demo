@@ -8,6 +8,7 @@ const PORT = Number(process.env.PORT || process.env.DEMO_PORT || 3000);
 const ROOT = path.resolve(__dirname, "..");
 const PUBLIC_DIR = path.join(__dirname, "public");
 const OUTPUT_DIR = path.join(ROOT, "output");
+const DEMO_DATA_DIR = path.join(ROOT, "demo-data");
 
 const SUMMARY_PATH = path.join(ROOT, "output/report/summary.json");
 const RESULTS_PATH = path.join(ROOT, "output/results/results.json");
@@ -15,9 +16,15 @@ const REPORT_PATH = path.join(ROOT, "output/report/report.html");
 const CSV_PATH = path.join(ROOT, "output/results/results.csv");
 const RUN_CONTRACT_PATH = path.join(ROOT, "output/report/run-contract.json");
 
+const DEMO_SUMMARY_PATH = path.join(ROOT, "demo-data/report/summary.json");
+const DEMO_RESULTS_PATH = path.join(ROOT, "demo-data/results/results.json");
+const DEMO_REPORT_PATH = path.join(ROOT, "demo-data/report/report.html");
+const DEMO_CSV_PATH = path.join(ROOT, "demo-data/results/results.csv");
+const DEMO_RUN_CONTRACT_PATH = path.join(ROOT, "demo-data/report/run-contract.json");
+
 app.use(express.json());
 app.use(express.static(PUBLIC_DIR));
-app.use("/artifacts", express.static(OUTPUT_DIR));
+app.use("/artifacts", express.static(getArtifactsBaseDir()));
 
 let currentRun = null;
 let clients = [];
@@ -55,6 +62,16 @@ function safeReadText(filePath, fallback = "") {
   } catch {
     return fallback;
   }
+}
+function firstExistingPath(...filePaths) {
+  for (const filePath of filePaths) {
+    if (filePath && fs.existsSync(filePath)) return filePath;
+  }
+  return filePaths[filePaths.length - 1] || null;
+}
+
+function getArtifactsBaseDir() {
+  return fs.existsSync(OUTPUT_DIR) ? OUTPUT_DIR : DEMO_DATA_DIR;
 }
 
 function extractImdbId(url) {
@@ -104,7 +121,7 @@ function readInputUrls() {
     if (urls.length > 0) return urls;
   }
 
-  const results = safeReadJson(RESULTS_PATH, []);
+  const results = safeReadJson(firstExistingPath(RESULTS_PATH, DEMO_RESULTS_PATH), []);
   const uniqueUrls = [...new Set(
     (results || [])
       .map((row) => String(row.movieUrl || "").trim())
@@ -248,7 +265,7 @@ function applyLogEvent(line) {
 }
 
 function finalizeStatusesFromResults() {
-  const results = safeReadJson(RESULTS_PATH, []);
+  const results = safeReadJson(firstExistingPath(RESULTS_PATH, DEMO_RESULTS_PATH), []);
   const byUrl = new Map();
 
   for (const row of results) {
@@ -308,15 +325,15 @@ app.get("/api/status", (req, res) => {
 });
 
 app.get("/api/summary", (req, res) => {
-  res.json(safeReadJson(SUMMARY_PATH, {}));
+  res.json(safeReadJson(firstExistingPath(SUMMARY_PATH, DEMO_SUMMARY_PATH), {}));
 });
 
 app.get("/api/results", (req, res) => {
-  res.json(safeReadJson(RESULTS_PATH, []));
+  res.json(safeReadJson(firstExistingPath(RESULTS_PATH, DEMO_RESULTS_PATH), []));
 });
 
 app.get("/api/run-contract", (req, res) => {
-  res.json(safeReadJson(RUN_CONTRACT_PATH, {}));
+  res.json(safeReadJson(firstExistingPath(RUN_CONTRACT_PATH, DEMO_RUN_CONTRACT_PATH), {}));
 });
 
 app.get("/api/input-urls", (req, res) => {
@@ -333,24 +350,27 @@ app.get("/api/title-statuses", (req, res) => {
 });
 
 app.get("/report", (req, res) => {
-  if (!fs.existsSync(REPORT_PATH)) {
+  const reportPath = firstExistingPath(REPORT_PATH, DEMO_REPORT_PATH);
+  if (!reportPath || !fs.existsSync(reportPath)) {
     return res.status(404).send("Report not found");
   }
-  return res.sendFile(REPORT_PATH);
+  return res.sendFile(reportPath);
 });
 
 app.get("/download/results.csv", (req, res) => {
-  if (!fs.existsSync(CSV_PATH)) {
+  const csvPath = firstExistingPath(CSV_PATH, DEMO_CSV_PATH);
+  if (!csvPath || !fs.existsSync(csvPath)) {
     return res.status(404).send("CSV not found");
   }
-  return res.download(CSV_PATH);
+  return res.download(csvPath);
 });
 
 app.get("/download/results.json", (req, res) => {
-  if (!fs.existsSync(RESULTS_PATH)) {
+  const jsonPath = firstExistingPath(RESULTS_PATH, DEMO_RESULTS_PATH);
+  if (!jsonPath || !fs.existsSync(jsonPath)) {
     return res.status(404).send("JSON not found");
   }
-  return res.download(RESULTS_PATH);
+  return res.download(jsonPath);
 });
 
 app.post("/api/run", (req, res) => {

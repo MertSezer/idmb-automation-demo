@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>IMDb Automation Demo Report</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; background: #0b1020; color: #e8ecf3; }
+    h1, h2, h3 { margin-top: 0; }
+    .muted { color: #9aa4b2; }
+    .grid { display: grid; gap: 16px; }
+    .grid.cards { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 20px; }
+    .panel { background: #121a2b; border: 1px solid #243047; border-radius: 14px; padding: 16px; }
+    .big { font-size: 28px; font-weight: 700; margin-top: 6px; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; margin-right: 6px; }
+    .green { background: #143d2b; color: #86efac; }
+    .yellow { background: #3f3213; color: #fcd34d; }
+    .red { background: #451a1a; color: #fca5a5; }
+    .gray { background: #334155; color: #e2e8f0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+    .kv { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #243047; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid #243047; padding: 10px 8px; text-align: left; vertical-align: top; }
+    th { background: #182235; position: sticky; top: 0; }
+    .table-wrap { overflow: auto; max-height: 520px; }
+    .links a { color: #93c5fd; text-decoration: none; margin-right: 8px; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .card { background: #121a2b; border: 1px solid #243047; border-radius: 14px; overflow: hidden; }
+    .card img { width: 100%; height: 180px; object-fit: cover; background: #0f172a; }
+    .card-body { padding: 12px; }
+    .card-title { font-weight: 700; margin-bottom: 4px; }
+    .card-sub { color: #9aa4b2; margin-bottom: 8px; }
+    .banner {
+      background: linear-gradient(135deg, #13213d, #1d3557);
+      border: 1px solid #2d4b73;
+      border-radius: 16px;
+      padding: 18px;
+      margin: 18px 0 20px 0;
+    }
+    .banner-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .flow span {
+      background: #182235;
+      border: 1px solid #2a3a57;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+    .check {
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+    .check.good {
+      background: #143d2b;
+      color: #d1fae5;
+      border-color: #1f5a3f;
+    }
+    .check.bad {
+      background: #451a1a;
+      color: #fee2e2;
+      border-color: #6b2424;
+    }
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .shot {
+      display: block;
+      text-decoration: none;
+      color: #e8ecf3;
+      background: #0f172a;
+      border: 1px solid #243047;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .shot img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      display: block;
+      background: #111827;
+    }
+    .shot span {
+      display: block;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+    @media (max-width: 900px) {
+      .two-col, .three-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <h1>IMDb Automation Demo Report</h1>
+  <div class="muted">Generated at: 2026-03-25T10:18:04.082Z</div>
+
+  <div class="panel" style="margin:16px 0 20px 0;">
+    <h2 style="margin-bottom:8px;">Execution Summary</h2>
+    <div>Cast rows and profile verification completed successfully.</div>
+    <div class="muted" style="margin-top:8px;">
+      Evidence files, screenshots, JSON results, and HTML report were generated for this run.
+    </div>
+  </div>
+
+  <div class="panel" style="margin:0 0 20px 0;">
+    <h2 style="margin-bottom:12px;">Pipeline Health</h2>
+    <div class="grid cards">
+      <div class="panel"><div class="muted">Titles Processed</div><div class="big">1</div></div>
+      <div class="panel"><div class="muted">Cast Rows Extracted</div><div class="big">3</div></div>
+      <div class="panel"><div class="muted">Profile Visits Attempted</div><div class="big">3</div></div>
+      <div class="panel"><div class="muted">Profile Visits Blocked</div><div class="big">0</div></div>
+    </div>
+  </div>
+
+  <div class="banner">
+    <div class="banner-title">Run completed successfully with controlled blocking detection</div>
+    <div class="muted">
+      The automation completed end-to-end, exported results, captured evidence, and explicitly identified the IMDb AWS WAF challenge on profile pages.
+    </div>
+    <div style="margin-top:12px;">
+      <span class="badge gray">verdict: SUCCESS</span>
+      <span class="badge green">report: completed</span>
+      <span class="badge yellow">extraction: complete</span>
+      <span class="badge red">blocked profiles: 0</span>
+    </div>
+    <div class="flow">
+      <span>Title Page</span>
+      <span>Cast Section</span>
+      <span>Cast Row</span>
+      <span>Profile Visit</span>
+      <span>Challenge Detection</span>
+      <span>JSON / CSV / HTML Report</span>
+    </div>
+  </div>
+
+  <div class="grid cards">
+    <div class="panel"><div class="muted">Total Rows</div><div class="big">3</div></div>
+    <div class="panel"><div class="muted">Unique People</div><div class="big">3</div></div>
+    <div class="panel"><div class="muted">Matched</div><div class="big">3</div></div>
+    <div class="panel"><div class="muted">Warnings</div><div class="big">0</div></div>
+    <div class="panel"><div class="muted">Blocked</div><div class="big">0</div></div>
+  </div>
+
+  <div class="grid cards">
+    <div class="panel"><div class="muted">Titles Processed</div><div class="big">1</div></div>
+    <div class="panel"><div class="muted">Profile Attempts</div><div class="big">3</div></div>
+    <div class="panel"><div class="muted">Passed</div><div class="big">3</div></div>
+    <div class="panel"><div class="muted">Evidence Screenshots</div><div class="big">12</div></div>
+    <div class="panel"><div class="muted">Run Duration (s)</div><div class="big">122.396</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <h3>What worked</h3>
+      <div class="check good">Title navigation completed</div><div class="check good">Cast section detected</div><div class="check good">Cast rows extracted</div><div class="check good">Profile visits attempted</div><div class="check good">Screenshot evidence captured</div><div class="check good">JSON export generated</div><div class="check good">CSV export generated</div><div class="check good">HTML report generated</div>
+    </div>
+    <div class="panel">
+      <h3>What was blocked</h3>
+      <div class="check bad">Profile content extraction blocked on IMDb profile pages</div><div class="check bad">Root cause identified as AWS WAF challenge</div><div class="check bad">Blocked rows marked explicitly in output</div><div class="check bad">Evidence retained for blocked attempts</div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <h3>Challenge Evidence Summary</h3>
+    <div class="grid cards">
+      <div class="panel"><div class="muted">Blocked Profiles</div><div class="big">0</div></div>
+      <div class="panel"><div class="muted">Debug Evidence Files</div><div class="big">3</div></div>
+      <div class="panel"><div class="muted">Screenshot Evidence</div><div class="big">12</div></div>
+    </div>
+    <div class="muted" style="margin-top:10px;">
+      Challenge detection evidence was preserved through screenshots, debug JSON files, logs, and structured report output.
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <h3>Status Counts</h3>
+      <div class="kv"><span>passed</span><strong>3</strong></div>
+    </div>
+    <div class="panel">
+      <h3>Match Status Counts</h3>
+      <div class="kv"><span>matched</span><strong>3</strong></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <h3>Error Counts</h3>
+    <div class="muted">No data</div>
+  </div>
+
+  <h2>Case Studies</h2>
+  <div class="three-col">
+    
+      <div class="panel">
+        <h3 style="margin-bottom:10px;">The Shawshank Redemption (1994) - Row 1</h3>
+        <div class="muted" style="margin-bottom:12px;">
+          Listed name: <strong>Tim Robbins</strong>
+        </div>
+        <div class="muted" style="margin-bottom:12px;">
+          Profile URL:
+          <a href="https://www.imdb.com/name/nm0000209/" target="_blank">https://www.imdb.com/name/nm0000209/</a>
+        </div>
+        <div style="margin-bottom:12px;">
+          <span class="badge green">matched</span>
+          <span class="badge green">passed</span>
+        </div>
+        <div class="muted" style="margin-bottom:12px;">
+          No error
+        </div>
+        <div class="evidence-grid">
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_title.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_title.png" alt="title"><span>Title page</span></a>
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_cast_section.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_cast_section.png" alt="cast"><span>Cast section</span></a>
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_row_1_selected.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_row_1_selected.png" alt="row"><span>Selected row</span></a>
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_row_1_profile.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_row_1_profile.png" alt="profile"><span>Profile attempt</span></a>
+        </div>
+      </div>
+    
+      <div class="panel">
+        <h3 style="margin-bottom:10px;">The Shawshank Redemption (1994) - Row 2</h3>
+        <div class="muted" style="margin-bottom:12px;">
+          Listed name: <strong>Morgan Freeman</strong>
+        </div>
+        <div class="muted" style="margin-bottom:12px;">
+          Profile URL:
+          <a href="https://www.imdb.com/name/nm0000151/" target="_blank">https://www.imdb.com/name/nm0000151/</a>
+        </div>
+        <div style="margin-bottom:12px;">
+          <span class="badge green">matched</span>
+          <span class="badge green">passed</span>
+        </div>
+        <div class="muted" style="margin-bottom:12px;">
+          No error
+        </div>
+        <div class="evidence-grid">
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_title.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_title.png" alt="title"><span>Title page</span></a>
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_cast_section.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_cast_section.png" alt="cast"><span>Cast section</span></a>
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_row_2_selected.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_row_2_selected.png" alt="row"><span>Selected row</span></a>
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_row_2_profile.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_row_2_profile.png" alt="profile"><span>Profile attempt</span></a>
+        </div>
+      </div>
+    
+      <div class="panel">
+        <h3 style="margin-bottom:10px;">The Shawshank Redemption (1994) - Row 3</h3>
+        <div class="muted" style="margin-bottom:12px;">
+          Listed name: <strong>Bob Gunton</strong>
+        </div>
+        <div class="muted" style="margin-bottom:12px;">
+          Profile URL:
+          <a href="https://www.imdb.com/name/nm0348409/" target="_blank">https://www.imdb.com/name/nm0348409/</a>
+        </div>
+        <div style="margin-bottom:12px;">
+          <span class="badge green">matched</span>
+          <span class="badge green">passed</span>
+        </div>
+        <div class="muted" style="margin-bottom:12px;">
+          No error
+        </div>
+        <div class="evidence-grid">
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_title.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_title.png" alt="title"><span>Title page</span></a>
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_cast_section.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_cast_section.png" alt="cast"><span>Cast section</span></a>
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_row_3_selected.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_row_3_selected.png" alt="row"><span>Selected row</span></a>
+          <a class="shot" href="../screenshots/The_Shawshank_Redemption_(1994)_row_3_profile.png" target="_blank"><img src="../screenshots/The_Shawshank_Redemption_(1994)_row_3_profile.png" alt="profile"><span>Profile attempt</span></a>
+        </div>
+      </div>
+    
+  </div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <h2>Results Table</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Movie</th>
+            <th>Row</th>
+            <th>Listed Name</th>
+            <th>Profile Name</th>
+            <th>Profile URL</th>
+            <th>Match</th>
+            <th>Status</th>
+            <th>Error</th>
+            <th>Evidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+      <tr>
+        <td>The Shawshank Redemption (1994)</td>
+        <td>1</td>
+        <td>Tim Robbins</td>
+        <td>Tim Robbins</td>
+        <td><a href="https://www.imdb.com/name/nm0000209/" target="_blank">open</a></td>
+        <td><span class="badge green">matched</span></td>
+        <td><span class="badge green">passed</span></td>
+        <td></td>
+        <td class="links">
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_title.png" target="_blank">title</a>
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_cast_section.png" target="_blank">cast</a>
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_1_selected.png" target="_blank">row</a>
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_1_profile.png" target="_blank">profile</a>
+        </td>
+      </tr>
+    
+      <tr>
+        <td>The Shawshank Redemption (1994)</td>
+        <td>2</td>
+        <td>Morgan Freeman</td>
+        <td>Morgan Freeman</td>
+        <td><a href="https://www.imdb.com/name/nm0000151/" target="_blank">open</a></td>
+        <td><span class="badge green">matched</span></td>
+        <td><span class="badge green">passed</span></td>
+        <td></td>
+        <td class="links">
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_title.png" target="_blank">title</a>
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_cast_section.png" target="_blank">cast</a>
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_2_selected.png" target="_blank">row</a>
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_2_profile.png" target="_blank">profile</a>
+        </td>
+      </tr>
+    
+      <tr>
+        <td>The Shawshank Redemption (1994)</td>
+        <td>3</td>
+        <td>Bob Gunton</td>
+        <td>Bob Gunton</td>
+        <td><a href="https://www.imdb.com/name/nm0348409/" target="_blank">open</a></td>
+        <td><span class="badge green">matched</span></td>
+        <td><span class="badge green">passed</span></td>
+        <td></td>
+        <td class="links">
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_title.png" target="_blank">title</a>
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_cast_section.png" target="_blank">cast</a>
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_3_selected.png" target="_blank">row</a>
+          <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_3_profile.png" target="_blank">profile</a>
+        </td>
+      </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2>Evidence Gallery</h2>
+  <div class="gallery">
+    
+      <div class="card">
+        <img src="../screenshots/The_Shawshank_Redemption_(1994)_row_1_selected.png" alt="The Shawshank Redemption (1994)">
+        <div class="card-body">
+          <div class="card-title">The Shawshank Redemption (1994)</div>
+          <div class="card-sub">Tim Robbins</div>
+          <div style="margin-bottom:8px;">
+            <span class="badge green">matched</span>
+          </div>
+          <div class="links">
+            <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_1_selected.png" target="_blank">row</a>
+            <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_1_profile.png" target="_blank">profile</a>
+            <a href="https://www.imdb.com/name/nm0000209/" target="_blank">url</a>
+          </div>
+        </div>
+      </div>
+    
+      <div class="card">
+        <img src="../screenshots/The_Shawshank_Redemption_(1994)_row_2_selected.png" alt="The Shawshank Redemption (1994)">
+        <div class="card-body">
+          <div class="card-title">The Shawshank Redemption (1994)</div>
+          <div class="card-sub">Morgan Freeman</div>
+          <div style="margin-bottom:8px;">
+            <span class="badge green">matched</span>
+          </div>
+          <div class="links">
+            <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_2_selected.png" target="_blank">row</a>
+            <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_2_profile.png" target="_blank">profile</a>
+            <a href="https://www.imdb.com/name/nm0000151/" target="_blank">url</a>
+          </div>
+        </div>
+      </div>
+    
+      <div class="card">
+        <img src="../screenshots/The_Shawshank_Redemption_(1994)_row_3_selected.png" alt="The Shawshank Redemption (1994)">
+        <div class="card-body">
+          <div class="card-title">The Shawshank Redemption (1994)</div>
+          <div class="card-sub">Bob Gunton</div>
+          <div style="margin-bottom:8px;">
+            <span class="badge green">matched</span>
+          </div>
+          <div class="links">
+            <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_3_selected.png" target="_blank">row</a>
+            <a href="../screenshots/The_Shawshank_Redemption_(1994)_row_3_profile.png" target="_blank">profile</a>
+            <a href="https://www.imdb.com/name/nm0348409/" target="_blank">url</a>
+          </div>
+        </div>
+      </div>
+    
+  </div>
+</body>
+</html>
