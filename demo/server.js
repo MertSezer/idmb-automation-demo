@@ -7,6 +7,7 @@ const app = express();
 const PORT = process.env.DEMO_PORT || 3000;
 const ROOT = path.resolve(__dirname, "..");
 const PUBLIC_DIR = path.join(__dirname, "public");
+const OUTPUT_DIR = path.join(ROOT, "output");
 
 const SUMMARY_PATH = path.join(ROOT, "output/report/summary.json");
 const RESULTS_PATH = path.join(ROOT, "output/results/results.json");
@@ -16,6 +17,7 @@ const RUN_CONTRACT_PATH = path.join(ROOT, "output/report/run-contract.json");
 
 app.use(express.json());
 app.use(express.static(PUBLIC_DIR));
+app.use("/artifacts", express.static(OUTPUT_DIR));
 
 let currentRun = null;
 let clients = [];
@@ -92,14 +94,19 @@ app.post("/api/run", (req, res) => {
     return res.status(409).json({ error: "Run already in progress" });
   }
 
-  const child = spawn("npm", ["run", "start:validated"], { env: { ...process.env, TITLE_LIMIT: req.body.limit || 36 } }, {
+  const limit = Number(req.body?.limit) > 0 ? String(Math.floor(Number(req.body.limit))) : "36";
+
+  const child = spawn("npm", ["run", "start:validated"], {
     cwd: ROOT,
     shell: true,
-    env: process.env,
+    env: {
+      ...process.env,
+      TITLE_LIMIT: limit
+    }
   });
 
   currentRun = child;
-  broadcast({ type: "run-started", pid: child.pid });
+  broadcast({ type: "run-started", pid: child.pid, limit });
 
   child.stdout.on("data", (chunk) => {
     broadcast({ type: "stdout", message: chunk.toString() });
@@ -114,7 +121,7 @@ app.post("/api/run", (req, res) => {
     currentRun = null;
   });
 
-  res.json({ started: true, pid: child.pid });
+  res.json({ started: true, pid: child.pid, limit });
 });
 
 app.listen(PORT, () => {
