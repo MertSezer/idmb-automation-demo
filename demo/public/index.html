@@ -1,124 +1,481 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>IMDb Automation Demo</title>
   <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a2f;
+      --panel-2: #18223d;
+      --text: #e8ecf7;
+      --muted: #aeb8d0;
+      --line: #2a3558;
+      --accent: #7aa2ff;
+      --accent-2: #9fe3c1;
+      --warn-bg: #3b2d08;
+      --warn-fg: #ffd76a;
+      --ok-bg: #11351f;
+      --ok-fg: #8ef0b3;
+      --err-bg: #3b1420;
+      --err-fg: #ff92aa;
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
-      font-family: Arial, sans-serif;
-      margin: 24px;
-      line-height: 1.4;
-      background: #f7f7f7;
-      color: #222;
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(122,162,255,0.16), transparent 28%),
+        radial-gradient(circle at top right, rgba(159,227,193,0.10), transparent 24%),
+        linear-gradient(180deg, #0b1020 0%, #0d1326 100%);
+      color: var(--text);
     }
-    h1 { margin-bottom: 8px; }
-    .actions {
+
+    a { color: #9fc0ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      width: min(1440px, calc(100% - 32px));
+      margin: 24px auto 40px;
+    }
+
+    .hero {
       display: flex;
-      gap: 12px;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 24px;
+      background: linear-gradient(180deg, rgba(24,34,61,0.96), rgba(18,26,47,0.96));
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent-2);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(28px, 3.6vw, 42px);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      margin: 12px 0 0;
+      color: var(--muted);
+      max-width: 880px;
+      line-height: 1.55;
+    }
+
+    .hero-actions {
+      display: flex;
       flex-wrap: wrap;
-      margin: 16px 0;
+      gap: 10px;
+      justify-content: flex-end;
+      min-width: 280px;
     }
-    button, a.btn {
-      padding: 10px 16px;
-      border: 1px solid #bbb;
-      background: white;
-      color: #222;
-      text-decoration: none;
-      border-radius: 8px;
+
+    .ghost-btn, .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font-weight: 600;
       cursor: pointer;
+      transition: 140ms ease;
+      text-decoration: none;
+      white-space: nowrap;
     }
-    button:disabled {
+
+    .ghost-btn:hover, .btn:hover {
+      transform: translateY(-1px);
+      border-color: #4661a6;
+      background: rgba(255,255,255,0.06);
+      text-decoration: none;
+    }
+
+    .btn.primary {
+      background: linear-gradient(180deg, #7aa2ff, #5e83da);
+      border-color: transparent;
+      color: #081122;
+    }
+
+    .btn.secondary {
+      background: linear-gradient(180deg, #203150, #182543);
+    }
+
+    .flow-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(18,26,47,0.84);
+      color: var(--muted);
+      box-shadow: var(--shadow);
+    }
+
+    .flow-strip .step {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .flow-arrow {
       opacity: 0.6;
-      cursor: not-allowed;
     }
+
     .grid {
       display: grid;
+      gap: 18px;
+    }
+
+    .grid-2 {
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      margin-bottom: 18px;
     }
-    .card {
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 16px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(18,26,47,0.96), rgba(14,21,39,0.96));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 18px;
     }
-    .full {
-      grid-column: 1 / -1;
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 20px 0;
     }
-    pre, #log {
-      background: #111;
-      color: #eee;
-      padding: 12px;
-      border-radius: 8px;
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .panel-body {
+      padding: 18px 20px 20px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .filter {
+      flex: 1 1 340px;
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      outline: none;
+    }
+
+    .filter::placeholder {
+      color: #8f9bb8;
+    }
+
+    .status-box,
+    .code-box,
+    #results,
+    #inputTitles {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.025);
+    }
+
+    .status-box {
+      padding: 14px 16px;
+      min-height: 96px;
+      line-height: 1.7;
+    }
+
+    .code-box {
+      margin: 0;
+      padding: 14px 16px;
+      min-height: 210px;
+      color: #c8d3f0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+      font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .log-box {
+      min-height: 340px;
+      max-height: 540px;
+    }
+
+    #results,
+    #inputTitles {
+      padding: 14px;
       overflow: auto;
     }
-    #log {
-      height: 380px;
-      white-space: pre-wrap;
-    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
+      background: transparent !important;
     }
+
     th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
+      border: 1px solid var(--line) !important;
+      padding: 10px 12px;
       text-align: left;
+      vertical-align: top;
       font-size: 14px;
     }
-    th { background: #fafafa; }
-    .muted { color: #666; }
-    .ok { color: green; font-weight: bold; }
-    .warn { color: #b26b00; font-weight: bold; }
-    @media (max-width: 900px) {
-      .grid { grid-template-columns: 1fr; }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #1b2646 !important;
+    }
+
+    tbody tr:nth-child(even) {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .ok, .warn, .err {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      border: 1px solid transparent;
+    }
+
+    .ok {
+      color: var(--ok-fg);
+      background: var(--ok-bg);
+      border-color: rgba(142,240,179,0.18);
+    }
+
+    .warn {
+      color: var(--warn-fg);
+      background: var(--warn-bg);
+      border-color: rgba(255,215,106,0.18);
+    }
+
+    .err {
+      color: var(--err-fg);
+      background: var(--err-bg);
+      border-color: rgba(255,146,170,0.18);
+    }
+
+    .notes {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .notes li + li {
+      margin-top: 10px;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .hero {
+        flex-direction: column;
+      }
+
+      .hero-actions {
+        justify-content: flex-start;
+        min-width: 0;
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>IMDb Automation Demo</h1>
-  <p class="muted">
-    Film sayfası → cast satırları → profil sayfası → isim doğrulama akışını canlı izleyin.
-  </p>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Proof-Driven Automation Demo</p>
+        <h1>IMDb Cast-to-Profile Validation Dashboard</h1>
+        <p class="subtitle">
+          This demo shows a browser automation pipeline that opens an IMDb title page,
+          discovers cast rows, opens actor profile pages, validates listed names against
+          profile names, and stores screenshot-based evidence plus structured outputs.
+        </p>
+      </div>
 
-  <div class="actions">
-<input id="filterInput" placeholder="Film veya isim ara..." style="padding:8px;width:250px;" />
+      <div class="hero-actions">
+        <a class="ghost-btn" href="/report" target="_blank" rel="noopener noreferrer">Open HTML Report</a>
+        <a class="ghost-btn" href="/download/results.json">Download JSON</a>
+        <a class="ghost-btn" href="/download/results.csv">Download CSV</a>
+      </div>
+    </section>
 
-    
-<button id="run1Btn">Run 1 Film</button>
-<button id="run5Btn">Run 5 Film</button>
-<button id="runBtn">Run 36 Film</button>
-Demo Başlat</button>
-    <a class="btn" href="/report" target="_blank">HTML Report Aç</a>
-    <a class="btn" href="/download/results.csv">CSV İndir</a>
-    <a class="btn" href="/download/results.json">JSON İndir</a>
-  </div>
+    <section class="flow-strip" aria-label="Execution flow">
+      <span class="step">1. Open Title</span>
+      <span class="flow-arrow">→</span>
+      <span class="step">2. Extract Cast</span>
+      <span class="flow-arrow">→</span>
+      <span class="step">3. Open Profile</span>
+      <span class="flow-arrow">→</span>
+      <span class="step">4. Validate Name</span>
+      <span class="flow-arrow">→</span>
+      <span class="step">5. Generate Evidence</span>
+      <span class="flow-arrow">→</span>
+      <span class="step">6. Export Results</span>
+    </section>
 
-  <div class="grid">
-    <div class="card">
-      <h3>Çalışma Durumu</h3>
-      <div id="status">Yükleniyor...</div>
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Control Panel</h2>
+          <p>Quick smoke tests, full replay-sized runs, filtering, and artifact access.</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="controls">
+          <button id="run1Btn" class="btn secondary" type="button">Run 1</button>
+          <button id="run5Btn" class="btn secondary" type="button">Run 5</button>
+          <button id="runBtn" class="btn primary" type="button">Run All 36</button>
+          <input
+            id="filterInput"
+            class="filter"
+            type="text"
+            placeholder="Filter by movie, listed name, profile name, match status, or profile URL"
+          />
+        </div>
+        <div class="footer-note">
+          Recommended demo order: Run 1 for quick proof, Run 5 for smoke test, Run All 36 for full showcase.
+        </div>
+      </div>
+    </section>
+
+    <div class="grid grid-2">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Run Status</h2>
+            <p>Live execution state, PID, effective limit, and last exit code.</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="status" class="status-box">Loading status...</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Run Summary</h2>
+            <p>Structured summary from the latest exported run.</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <pre id="summary" class="code-box">Loading summary...</pre>
+        </div>
+      </section>
     </div>
 
-    <div class="card">
-      <h3>Özet</h3>
-      <pre id="summary">Henüz veri yok.</pre>
-    </div>
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Input Titles</h2>
+          <p>The full IMDb title set used by the run. This should make the 36-title scope visible.</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="inputTitles">Loading input titles...</div>
+      </div>
+    </section>
 
-    <div class="card full">
-      <h3>Canlı Log</h3>
-      <div id="log"></div>
-    </div>
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Validated Results</h2>
+          <p>Per-row evidence including listed name, profile name, validation result, and screenshot links.</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="results">Loading results...</div>
+      </div>
+    </section>
 
-    <div class="card full">
-      <h3>İlk 15 Sonuç</h3>
-      <div id="results">Henüz veri yok.</div>
-    </div>
-  </div>
+    <div class="grid grid-2">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Live Execution Log</h2>
+            <p>Server-sent event stream for run lifecycle and stdout/stderr output.</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <pre id="log" class="code-box log-box">Connecting to live log stream...</pre>
+        </div>
+      </section>
 
-  <script src="/app.js"></script>
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Known Limitations</h2>
+            <p>Important project boundaries to present honestly during the demo.</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <ul class="notes">
+            <li><strong>Profile-name validation</strong> is the stable core capability of the system.</li>
+            <li><strong>Character extraction</strong> is still experimental and may intentionally remain blank instead of returning noisy cross-row data.</li>
+            <li><strong>Live IMDb access</strong> can be affected by anti-bot behavior, so replay-first presentation remains the safest online-demo strategy.</li>
+            <li><strong>Screenshot evidence</strong> is the strongest differentiator of this project and should be highlighted in the walkthrough.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/app.js?v=4"></script>
 </body>
 </html>
